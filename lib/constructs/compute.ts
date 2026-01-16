@@ -15,7 +15,7 @@ interface ComputeProps {
     bucket: s3.IBucket;
     queue: sqs.IQueue;
     userPool: cognito.IUserPool;
-    accountId: string
+    accountId: string;
 }
 
 export class Compute extends Construct {
@@ -49,18 +49,18 @@ export class Compute extends Construct {
 
         this.authLambda = new lambda.Function(this, 'AuthLambda', {
             ...apiLambdaProps,
-            code: lambda.Code.fromAsset(path.join(__dirname, "../../src/comp_auth"), { bundling: bundlingConfig }),
+            code: lambda.Code.fromAsset(path.join(__dirname, "../../src/auth"), { bundling: bundlingConfig }),
         });
 
         this.userLambda = new lambda.Function(this, 'UserLambda', {
             ...apiLambdaProps,
-            code: lambda.Code.fromAsset(path.join(__dirname, "../../src/comp_user"), { bundling: bundlingConfig }),
+            code: lambda.Code.fromAsset(path.join(__dirname, "../../src/user"), { bundling: bundlingConfig }),
         });
 
         this.emailWorker = new lambda.Function(this, 'EmailWorker', {
             runtime: lambda.Runtime.PYTHON_3_10,
             handler: "lambda_function.lambda_handler",
-            code: lambda.Code.fromAsset(path.join(__dirname, "../../src/comp_email_worker"), { bundling: bundlingConfig }),
+            code: lambda.Code.fromAsset(path.join(__dirname, "../../src/email_worker"), { bundling: bundlingConfig }),
             timeout: cdk.Duration.seconds(30),
         });
 
@@ -107,17 +107,5 @@ export class Compute extends Construct {
                 resources: [props.userPool.userPoolArn, props.table.tableArn, props.bucket.bucketArn, props.bucket.arnForObjects("*"), `arn:aws:ses:ap-south-1:${props.accountId}:identity/*`],
             })
         );
-
-        this.emailWorker.addToRolePolicy(
-            new iam.PolicyStatement({
-                actions: [
-                    "secretsmanager:GetSecretValue"
-                ],
-                resources: [
-                    `arn:aws:secretsmanager:ap-south-1:${props.accountId}:secret:POSTMASTER_TOKEN*`
-                ],
-            })
-        );
-
     }
 }
